@@ -1,20 +1,13 @@
-import os, sys
+# import os, sys
 import json
-import requests, pytest
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+import pytest
+# from requests_toolbelt.multipart.encoder import MultipartEncoder
 from api import PetFriends
 from settings import valid_email, valid_password
 
-global list_value
 pf = PetFriends()
 invalid_key = {"key": "invalid"}
 _, valid_key = pf.get_api_key(valid_email, valid_password)
-
-
-def fool_path(file):
-    # Получаем полный путь изображения питомца сохраняем в переменную file и возвращаем
-    file = os.path.join(os.path.dirname(__file__), file)
-    return file
 
 
 def generate_string(num):
@@ -31,6 +24,14 @@ def chinese_chars():
 
 def special_chars():
     return '|\\/!@#$%^&*()-_=+`~?"№;:[]{}'
+
+
+def processing(res):
+    try:
+        result = res.json()
+    except json.decoder.JSONDecodeError:
+        result = res.text
+    return res.status_code, res.headers.get('Content-Type'), result
 
 
 def test_get_api_key_for_valid_user():
@@ -64,18 +65,10 @@ def test_get_api_key_negative_user(email, password):
     assert status == 403
 
 
-def processing(res):
-    try:
-        result = res.json()
-    except json.decoder.JSONDecodeError:
-        result = res.text
-    return res.status_code, res.headers.get('Content-Type'), result
-
-
-@pytest.mark.parametrize("filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
+@pytest.mark.parametrize("pet_filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
 @pytest.mark.parametrize("accept_content_type", ["application/json; indent=4", 'application/xml'], ids=['json', 'xml'])
-def test_get_pets_with_positive_filter(filter, accept_content_type):
-    status, content_type, result = processing(pf.get_list_of_pets(valid_key, filter, accept_content_type))
+def test_get_pets_with_positive_filter(pet_filter, accept_content_type):
+    status, content_type, result = processing(pf.get_list_of_pets(valid_key, pet_filter, accept_content_type))
 
     # Проверяем статус ответа
     assert status == 200
@@ -86,19 +79,19 @@ def test_get_pets_with_positive_filter(filter, accept_content_type):
         assert len(result['pets']) > 0
 
 
-@pytest.mark.parametrize("filter",
+@pytest.mark.parametrize("pet_filter",
                          [generate_string(255), generate_string(1001), russian_chars(),
                           russian_chars().upper(), chinese_chars(), special_chars(), 123],
                          ids=['255 symbols', 'more than 1000 symbols', 'russian',
                               'RUSSIAN', 'chinese', 'specials', 'digit'])
-def test_get_pets_with_negative_filter(filter):
-    pytest.status, result = pf.get_list_of_pets(valid_key, filter)
+def test_get_pets_with_negative_filter(pet_filter):
+    res = pf.get_list_of_pets(valid_key, pet_filter, "application/json; indent=4")
 
     # Проверяем статус ответа
-    assert pytest.status == 403
+    assert res.status_code == 403
 
 
-@pytest.mark.parametrize("filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
+@pytest.mark.parametrize("pet_filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
 @pytest.mark.parametrize("key",
                          [invalid_key, {"key": generate_string(255)}, {"key": generate_string(1001)},
                           {"key": russian_chars()},
@@ -106,13 +99,13 @@ def test_get_pets_with_negative_filter(filter):
                           {"key": 123}],
                          ids=['invalid key', '255 symbols', 'more than 1000 symbols', 'russian',
                               'RUSSIAN', 'chinese', 'specials', 'digit'])
-def test_get_pets_with_negative_API_key(filter, key):
+def test_get_pets_with_negative_API_key(pet_filter, key):
     try:
-        pytest.status, result = pf.get_list_of_pets(key, filter)
+        res = pf.get_list_of_pets(key, pet_filter, "application/json; indent=4")
+        status = res.status_code
     except Exception as e:
-        # TypeError as e:
         print("\nError:" + str(e))
-        pytest.status = 403
+        status = 403
 
     # Проверяем статус ответа
-    assert pytest.status == 403
+    assert status == 403
