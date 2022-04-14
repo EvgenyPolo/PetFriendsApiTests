@@ -26,22 +26,17 @@ class PetFriends:
             result = res.text
         return status, result
 
-    def get_list_of_pets(self, auth_key: json, pet_filter: str = "") -> json:
+    def get_list_of_pets(self, auth_key: json, pet_filter: str = "", accept_content_Type: str = "") -> json:
         """Метод делает запрос к API сервера и возвращает статус запроса и результат в формате JSON
         со списком найденных питомцев, совпадающих с фильтром. На данный момент фильтр может иметь
         либо пустое значение - получить список всех питомцев, либо 'my_pets' - получить список
         собственных питомцев"""
 
-        headers = {'auth_key': auth_key['key']}
+        headers = {'auth_key': auth_key['key'], 'Content-Type': accept_content_Type, "Accept": accept_content_Type}
         pet_filter = {'filter': pet_filter}
 
-        res = requests.get(self.base_url + 'api/pets', headers=headers, params=pet_filter)
-        status = res.status_code
-        try:
-            result = res.json()
-        except json.decoder.JSONDecodeError:
-            result = res.text
-        return status, result
+        return requests.get(self.base_url + 'api/pets', headers=headers, params=pet_filter)
+
 
     def add_new_pet(self, auth_key: json, name: str, animal_type: str,
                     age: str, pet_photo: str) -> json:
