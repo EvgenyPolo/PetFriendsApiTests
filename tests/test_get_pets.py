@@ -56,21 +56,22 @@ def test_get_api_key_for_valid_user():
 def test_get_api_key_negative_user(email, password):
     try:
         # Отправляем запрос и сохраняем полученный ответ с кодом статуса в status
-        status, pytest.key = pf.get_api_key(email, password)
+        status, _ = pf.get_api_key(email, password)
     except Exception as e:
         print("\nError:" + str(e))
         status = 403
 
-    # """ Проверяем, что запрос api-ключа возвращает статус 403 и в результате содержится слово key"""
+    # """ Проверяем, что запрос api-ключа возвращает статус 403 """
     assert status == 403
 
 
 @pytest.mark.parametrize("pet_filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
 @pytest.mark.parametrize("accept_content_type", ["application/json; indent=4", 'application/xml'], ids=['json', 'xml'])
 def test_get_pets_with_positive_filter(pet_filter, accept_content_type):
+    # Отправляем запрос и обрабатываем полученный ответ
     status, content_type, result = processing(pf.get_list_of_pets(valid_key, pet_filter, accept_content_type))
 
-    # Проверяем статус ответа
+    # Проверяем полученные результаты
     assert status == 200
     assert content_type == accept_content_type[0:16]
     if filter == 'my_pets':
@@ -101,6 +102,7 @@ def test_get_pets_with_negative_filter(pet_filter):
                               'RUSSIAN', 'chinese', 'specials', 'digit'])
 def test_get_pets_with_negative_API_key(pet_filter, key):
     try:
+        # Отправляем запрос и сохраняем полученный ответ в res
         res = pf.get_list_of_pets(key, pet_filter, "application/json; indent=4")
         status = res.status_code
     except Exception as e:
