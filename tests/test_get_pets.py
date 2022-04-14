@@ -67,14 +67,14 @@ def test_get_api_key_negative_user(email, password):
 
 @pytest.mark.parametrize("pet_filter", ['', 'my_pets'], ids=['empty string', 'only my pets'])
 @pytest.mark.parametrize("accept_content_type", ["application/json; indent=4", 'application/xml'], ids=['json', 'xml'])
-def test_get_pets_with_positive_filter(pet_filter, accept_content_type):
+def test_get_pets_with_positive_filter(pet_filter, accept_content_type, time_delta):
     # Отправляем запрос и обрабатываем полученный ответ
     status, content_type, result = processing(pf.get_list_of_pets(valid_key, pet_filter, accept_content_type))
 
     # Проверяем полученные результаты
     assert status == 200
     assert content_type == accept_content_type[0:16]
-    if filter == 'my_pets':
+    if pet_filter == 'my_pets':
         assert len(result['pets']) >= 0
     else:
         assert len(result['pets']) > 0
