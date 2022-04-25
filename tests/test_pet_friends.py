@@ -33,30 +33,31 @@ class TestPetFriends:
         # Функция возвращает объединенный список значений всех своих питомцев
         try:
             # Запрашиваем список своих питомцев
-            status, my_pets = self.pf.get_list_of_pets(self.valid_key, "my_pets")
-            if status == 200:
-                if len(my_pets['pets']) > 0:
+            res = self.pf.get_list_of_pets(self.valid_key, "my_pets")
+            if res.status_code == 200:
+                if len(res.json()['pets']) > 0:
                     # Если они есть, возвращаем ответ сервера и объединенный список значений
                     # так как в my_pets.values() id питомца не находится при сравнении
-                    for item in my_pets['pets']:
+                    for item in res.json()['pets']:
                         # Соберем все значения списка словарей в один список list_value
                         list_value.extend(list(item.values()))
                     return list_value
                 else:
                     return ["пусто"]
             else:
-                raise Exception(f"Ошибка получения списка своих питомцев. Статус: {status}")
+                raise Exception(f"Ошибка получения списка своих питомцев. Статус: {res.status_code}")
         except Exception as e:
             print("\nError:", e)
 
     def pet_id_0(self):
         # Запрашиваем список своих питомцев
         try:
-            status, my_pets = self.pf.get_list_of_pets(self.valid_key, "my_pets")
-            if status == 200:
-                if len(my_pets['pets']) > 0:
+            res = self.pf.get_list_of_pets(self.valid_key, "my_pets")
+            # status, my_pets = self.pf.get_list_of_pets(self.valid_key, "my_pets")
+            if res.status_code == 200:
+                if len(res.json()['pets']) > 0:
                     # Если они есть, возвращаем id первого питомца
-                    return my_pets['pets'][0]['id']
+                    return res.json()['pets'][0]['id']
                 else:
                     # Если список пуст, добавляем питомца и возвращаем его id.
                     status, result = self.pf.add_new_pet_simple(self.valid_key, "Первенец", "зверь", "1")
@@ -66,7 +67,7 @@ class TestPetFriends:
                     # Поднимаем ошибку, если не удалось создать питомца
                     raise Exception("Не удалось создать питомца. Список своих питомцев пуст")
             else:
-                raise Exception(f"Ошибка получения списка своих питомцев. Статус: {status}")
+                raise Exception(f"Ошибка получения списка своих питомцев. Статус: {res.status_code}")
         except Exception as e:
             print("\nError:", e)
             return ""
@@ -107,20 +108,21 @@ class TestPetFriends:
         Для этого получаем валидный api ключ self.api_key(True), запрашиваем список
         всех питомцев filter='' и проверяем что status = 200 и список не пустой."""
 
-        status, result = self.pf.get_list_of_pets(self.valid_key, pet_filter)
+        res = self.pf.get_list_of_pets(self.valid_key, pet_filter)
 
-        assert status == 200
-        assert len(result['pets']) > 0
+        assert res.status_code == 200
+        assert len(res.json()['pets']) > 0
 
     def test_failed_get_all_pets_with_not_valid_key(self, pet_filter=''):
         """ Проверяем что запрос всех питомцев с невалидным ключом не возвращает код 200.
         Используя этот ключ, запрашиваем список всех питомцев и проверяем что result не
         содержит 'pets' """
 
-        status, result = self.pf.get_list_of_pets(self.invalid_key, pet_filter)
+        # res = self.pf.get_list_of_pets(self.valid_key, pet_filter)
+        res = self.pf.get_list_of_pets(self.invalid_key, pet_filter)
 
-        assert status != 200
-        assert 'pets' not in result
+        assert res.status_code == 403
+        assert 'pets' not in res.text
 
     def test_successful_add_new_pet_with_valid_data(self, name='Котейка', animal_type='котяра',
                                                     age='5', pet_photo='images/cat1.jpg'):
@@ -309,3 +311,26 @@ class TestPetFriends:
         # Запрашиваем объединенный список значений self.l_values() для своих питомцев и убеждаемся,
         # что в списке есть id питомца, которого пытались удалить
         assert pet_id in self.l_values()
+
+    def test_cleaner_test_pets(self):
+        """Зачищаем после тестирования"""
+        try:
+            # Запрашиваем список своих питомцев
+            res = self.pf.get_list_of_pets(self.valid_key, "my_pets")
+            if res.status_code == 200:
+                if len(res.json()['pets']) > 0:
+                    # Если они есть, то удаляем
+                    for item in res.json()['pets']:
+                        status, _ = self.pf.delete_pet(self.valid_key, item.get('id'))
+                        assert status == 200
+                    return ["пусто"]
+                else:
+                    return ["пусто"]
+            else:
+                raise Exception(f"Ошибка получения списка своих питомцев. Статус: {res.status_code}")
+        except Exception as e:
+            print("\nError:", e)
+
+         # Проверяем что статус ответа равен 200
+        assert status == 200
+
